@@ -106,6 +106,7 @@ export class VideoHandlerService {
 					resolve(video);
 				} catch (err) {
 					this.logger.error(err);
+					delete this.queue[id];
 				}
 			});
 			this.queue[id] = promise;
