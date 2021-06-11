@@ -19,6 +19,10 @@ export class VideoHandlerService {
 				this.mongoClient = client;
 				const audioDb = client.db('audio');
 				this.gridFS = new GridFSBucket(audioDb);
+
+				process.on('SIGTERM', async () => {
+					await this.mongoClient.close();
+				});
 			});
 		}
 	}
@@ -55,6 +59,8 @@ export class VideoHandlerService {
 				const y2mateId = idRes.result.match(/var k__id = "(?<id>.*)"; var video_service/).groups.id;
 				const duration = idRes.result.match(/Duration: (?<duration>.*)<\/p>/).groups.duration;
 
+				this.logger.log(`Video id ${id} initial request OK`);
+
 				const audioReqData = new FormData();
 				audioReqData.append('type', 'youtube');
 				audioReqData.append('_id', y2mateId);
@@ -71,6 +77,8 @@ export class VideoHandlerService {
 				).data;
 				const mp3URL = audioRes.result.match(/<a href="(?<url>.*)" rel="nofollow" type="button" class="btn btn-success btn-file">/).groups.url;
 
+				this.logger.log(`Video id ${id} acquired download url`);
+
 				const writeStream = this.gridFS.openUploadStreamWithId(id, title);
 				const dlStream = (await axios.get(mp3URL, { responseType: 'stream' })).data;
 				dlStream.pipe(writeStream);
@@ -78,6 +86,8 @@ export class VideoHandlerService {
 					dlStream.on('finish', resolve);
 					dlStream.on('close', resolve);
 				});
+
+				this.logger.log(`Video id ${id} written to db`);
 
 				const video = {
 					_id: id,
@@ -95,6 +105,8 @@ export class VideoHandlerService {
 				resolve(video);
 			});
 			this.queue[id] = promise;
+
+			this.logger.log(`Video id ${id} in queue`);
 
 			return promise;
 		} else {
