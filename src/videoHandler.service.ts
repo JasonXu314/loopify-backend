@@ -50,59 +50,63 @@ export class VideoHandlerService {
 				idReqData.append('q_auto', '1');
 				idReqData.append('ajax', '1');
 
-				const idRes: Y2MateRes = (
-					await axios.post<Y2MateRes>('https://www.y2mate.com/mates/mp3/ajax', idReqData, {
-						headers: { 'Content-Type': `multipart/form-data; boundary=${idReqData.getBoundary()}` }
-					})
-				).data;
-				const title = idRes.result.match(/var k_data_vtitle = "(?<title>.*)"; var k__id/).groups.title;
-				const y2mateId = idRes.result.match(/var k__id = "(?<id>.*)"; var video_service/).groups.id;
-				const duration = idRes.result.match(/Duration: (?<duration>.*)<\/p>/).groups.duration;
+				try {
+					const idRes: Y2MateRes = (
+						await axios.post<Y2MateRes>('https://www.y2mate.com/mates/mp3/ajax', idReqData, {
+							headers: { 'Content-Type': `multipart/form-data; boundary=${idReqData.getBoundary()}` }
+						})
+					).data;
+					const title = idRes.result.match(/var k_data_vtitle = "(?<title>.*)"; var k__id/).groups.title;
+					const y2mateId = idRes.result.match(/var k__id = "(?<id>.*)"; var video_service/).groups.id;
+					const duration = idRes.result.match(/Duration: (?<duration>.*)<\/p>/).groups.duration;
 
-				this.logger.log(`Video id ${id} initial request OK`);
+					this.logger.log(`Video id ${id} initial request OK`);
 
-				const audioReqData = new FormData();
-				audioReqData.append('type', 'youtube');
-				audioReqData.append('_id', y2mateId);
-				audioReqData.append('v_id', id);
-				audioReqData.append('ajax', '1');
-				audioReqData.append('token', '');
-				audioReqData.append('ftype', 'mp3');
-				audioReqData.append('fquality', '128');
+					const audioReqData = new FormData();
+					audioReqData.append('type', 'youtube');
+					audioReqData.append('_id', y2mateId);
+					audioReqData.append('v_id', id);
+					audioReqData.append('ajax', '1');
+					audioReqData.append('token', '');
+					audioReqData.append('ftype', 'mp3');
+					audioReqData.append('fquality', '128');
 
-				const audioRes: Y2MateRes = (
-					await axios.post<Y2MateRes>('https://www.y2mate.com/mates/mp3Convert', audioReqData, {
-						headers: { 'Content-Type': `multipart/form-data; boundary=${audioReqData.getBoundary()}` }
-					})
-				).data;
-				const mp3URL = audioRes.result.match(/<a href="(?<url>.*)" rel="nofollow" type="button" class="btn btn-success btn-file">/).groups.url;
+					const audioRes: Y2MateRes = (
+						await axios.post<Y2MateRes>('https://www.y2mate.com/mates/mp3Convert', audioReqData, {
+							headers: { 'Content-Type': `multipart/form-data; boundary=${audioReqData.getBoundary()}` }
+						})
+					).data;
+					const mp3URL = audioRes.result.match(/<a href="(?<url>.*)" rel="nofollow" type="button" class="btn btn-success btn-file">/).groups.url;
 
-				this.logger.log(`Video id ${id} acquired download url`);
+					this.logger.log(`Video id ${id} acquired download url`);
 
-				const writeStream = this.gridFS.openUploadStreamWithId(id, title);
-				const dlStream = (await axios.get(mp3URL, { responseType: 'stream' })).data;
-				dlStream.pipe(writeStream);
-				await new Promise((resolve) => {
-					dlStream.on('finish', resolve);
-					dlStream.on('close', resolve);
-				});
+					const writeStream = this.gridFS.openUploadStreamWithId(id, title);
+					const dlStream = (await axios.get(mp3URL, { responseType: 'stream' })).data;
+					dlStream.pipe(writeStream);
+					await new Promise((resolve) => {
+						dlStream.on('finish', resolve);
+						dlStream.on('close', resolve);
+					});
 
-				this.logger.log(`Video id ${id} written to db`);
+					this.logger.log(`Video id ${id} written to db`);
 
-				const video = {
-					_id: id,
-					url: `https://www.youtube.com/watch?v=${id}`,
-					title,
-					duration,
-					thumb: `https://i.ytimg.com/vi/${id}/1.jpg`,
-					audio: `${process.env.LOCATION!}/audio/${id}`
-				};
+					const video = {
+						_id: id,
+						url: `https://www.youtube.com/watch?v=${id}`,
+						title,
+						duration,
+						thumb: `https://i.ytimg.com/vi/${id}/1.jpg`,
+						audio: `${process.env.LOCATION!}/audio/${id}`
+					};
 
-				await this.mongoClient.db('audio').collection('metadata').insertOne(video);
+					await this.mongoClient.db('audio').collection('metadata').insertOne(video);
 
-				delete this.queue[id];
+					delete this.queue[id];
 
-				resolve(video);
+					resolve(video);
+				} catch (err) {
+					this.logger.error(err);
+				}
 			});
 			this.queue[id] = promise;
 
