@@ -31,6 +31,10 @@ export class VideoHandlerService {
 		return this.queue[id];
 	}
 
+	public getQueueState(): Record<string, Promise<Video>> {
+		return this.queue;
+	}
+
 	async saveVideo(id: string): Promise<Video> {
 		const videos = (await this.mongoClient.db('audio').collection('metadata').find({ _id: id }).toArray()) as Video[];
 		const exists = videos.length !== 0;

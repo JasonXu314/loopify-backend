@@ -39,4 +39,26 @@ export class AppController {
 			this.videoHandler.getAudio(id).pipe(res);
 		}
 	}
+
+	@Get('/status')
+	@Header('Content-Type', 'text/html')
+	getStatus(): string {
+		const queue = this.videoHandler.getQueueState();
+		return `
+			<html>
+				<head>
+					<title>Loopify | Backend Status</title>
+					<style>
+					h4 { margin: 0; }
+					</style>
+				</head>
+				<body>
+					<h4>In Queue:</h4>
+					<ul>
+						${Object.keys(queue).map((id) => `<li>${id}</li>`)}
+					</ul>
+				</body>
+			</html>
+		`;
+	}
 }
