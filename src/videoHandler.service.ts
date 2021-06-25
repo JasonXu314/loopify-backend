@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
-import * as FormData from 'form-data';
 import { GridFSBucket, GridFSBucketReadStream, MongoClient, ObjectId } from 'mongodb';
+import * as ytdl from 'ytdl-core';
+import { rawNumberToTime } from './utils/utils';
 
 @Injectable()
 export class VideoHandlerService {
@@ -43,45 +43,20 @@ export class VideoHandlerService {
 		const videos = (await this.mongoClient.db('audio').collection('metadata').find({ _id: id }).toArray()) as Video[];
 		const exists = videos.length !== 0;
 		if (!exists && !(id in this.queue)) {
-			const promise = new Promise<Video>(async (resolve) => {
-				this.logger.log(`Saving video with id ${id}`);
-				const idReqData = new FormData();
-				idReqData.append('url', `https://www.youtube.com/watch?v=${id}`);
-				idReqData.append('q_auto', '1');
-				idReqData.append('ajax', '1');
-
+			const promise = new Promise<Video>(async (resolve, reject) => {
 				try {
-					const idRes: Y2MateRes = (
-						await axios.post<Y2MateRes>('https://www.y2mate.com/mates/mp3/ajax', idReqData, {
-							headers: { 'Content-Type': `multipart/form-data; boundary=${idReqData.getBoundary()}` }
-						})
-					).data;
-					const title = idRes.result.match(/var k_data_vtitle = "(?<title>.*)"; var k__id/).groups.title;
-					const y2mateId = idRes.result.match(/var k__id = "(?<id>.*)"; var video_service/).groups.id;
-					const duration = idRes.result.match(/Duration: (?<duration>.*)<\/p>/).groups.duration;
+					this.logger.log(`Saving video with id ${id}`);
+					const url = `https://www.youtube.com/watch?v=${id}`;
 
-					this.logger.log(`Video id ${id} initial request OK`);
-
-					const audioReqData = new FormData();
-					audioReqData.append('type', 'youtube');
-					audioReqData.append('_id', y2mateId);
-					audioReqData.append('v_id', id);
-					audioReqData.append('ajax', '1');
-					audioReqData.append('token', '');
-					audioReqData.append('ftype', 'mp3');
-					audioReqData.append('fquality', '128');
-
-					const audioRes: Y2MateRes = (
-						await axios.post<Y2MateRes>('https://www.y2mate.com/mates/mp3Convert', audioReqData, {
-							headers: { 'Content-Type': `multipart/form-data; boundary=${audioReqData.getBoundary()}` }
-						})
-					).data;
-					const mp3URL = audioRes.result.match(/<a href="(?<url>.*)" rel="nofollow" type="button" class="btn btn-success btn-file">/).groups.url;
-
-					this.logger.log(`Video id ${id} acquired download url`);
+					const dlStream = ytdl(url);
+					const {
+						player_response: {
+							videoDetails: { title, lengthSeconds, shortDescription, author }
+						}
+					} = await ytdl.getBasicInfo(url);
+					const duration = rawNumberToTime(parseInt(lengthSeconds));
 
 					const writeStream = this.gridFS.openUploadStreamWithId(id, title);
-					const dlStream = (await axios.get(mp3URL, { responseType: 'stream' })).data;
 					dlStream.pipe(writeStream);
 					await new Promise((resolve) => {
 						dlStream.on('finish', resolve);
@@ -92,9 +67,11 @@ export class VideoHandlerService {
 
 					const video = {
 						_id: id,
-						url: `https://www.youtube.com/watch?v=${id}`,
+						url,
 						title,
 						duration,
+						description: shortDescription,
+						author,
 						thumb: `https://i.ytimg.com/vi/${id}/1.jpg`,
 						audio: `${process.env.LOCATION!}/audio/${id}`
 					};
@@ -105,7 +82,7 @@ export class VideoHandlerService {
 
 					resolve(video);
 				} catch (err) {
-					this.logger.error(err);
+					reject(err);
 					delete this.queue[id];
 				}
 			});

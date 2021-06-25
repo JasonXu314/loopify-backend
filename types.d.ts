@@ -5,6 +5,8 @@ interface Video {
 	thumb: string;
 	title: string;
 	duration: string;
+	author: string;
+	description: string;
 }
 
 interface Y2MateRes {

@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Header, Logger, Param, Post, Response } from '@nestjs/common';
+import { Body, Controller, Get, Header, Logger, NotFoundException, Param, Post, Response } from '@nestjs/common';
+import * as contentDisposition from 'content-disposition';
 import { ServerResponse } from 'http';
 import { VideoHandlerService } from './videoHandler.service';
 
@@ -30,12 +31,20 @@ export class AppController {
 		if (this.videoHandler.inQueue(id)) {
 			const video = await this.videoHandler.getQueueItem(id);
 
-			res.setHeader('Content-Disposition', `attachment; filename="${video.title}.mp3"; filename*=utf-8"${video.title}.mp3`);
+			if (!video) {
+				throw new NotFoundException(`No audio exists with id ${id}`);
+			}
+
+			res.setHeader('Content-Disposition', contentDisposition(video.title));
 			this.videoHandler.getAudio(id).pipe(res);
 		} else {
 			const video = await this.videoHandler.getMetadata(id);
 
-			res.setHeader('Content-Disposition', `attachment; filename="${video.title}.mp3"; filename*=utf-8"${video.title}.mp3`);
+			if (!video) {
+				throw new NotFoundException(`No audio exists with id ${id}`);
+			}
+
+			res.setHeader('Content-Disposition', contentDisposition(video.title));
 			this.videoHandler.getAudio(id).pipe(res);
 		}
 	}
