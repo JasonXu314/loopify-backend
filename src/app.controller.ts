@@ -70,4 +70,22 @@ export class AppController {
 			</html>
 		`;
 	}
+
+	@Get('/')
+	@Header('Content-Type', 'text/html')
+	getIndex(): string {
+		return `
+			<html>
+				<head>
+					<title>Loopify | Test Page</title>
+					<style>
+					h1 { margin: 0; }
+					</style>
+				</head>
+				<body>
+					<h1>Hi, this page does nothing!</h1>
+				</body>
+			</html>
+		`;
+	}
 }
