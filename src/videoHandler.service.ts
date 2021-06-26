@@ -8,6 +8,7 @@ export class VideoHandlerService {
 	private mongoClient: MongoClient;
 	private gridFS: GridFSBucket;
 	private queue: Record<string, Promise<Video>> = {};
+	public connect: Promise<void> | null;
 
 	constructor(private readonly logger: Logger) {
 		this.logger = new Logger('Video Handler');
@@ -15,14 +16,17 @@ export class VideoHandlerService {
 			this.logger.log('MongoDB URL undefined');
 			throw new Error();
 		} else {
-			MongoClient.connect(process.env.MONGODB_URL, { useUnifiedTopology: true }).then((client) => {
-				this.mongoClient = client;
-				const audioDb = client.db('audio');
-				this.gridFS = new GridFSBucket(audioDb);
-
-				process.on('SIGTERM', async () => {
-					await this.mongoClient.close();
+			this.connect = new Promise((resolve) => {
+				MongoClient.connect(process.env.MONGODB_URL, { useUnifiedTopology: true }).then((client) => {
+					this.mongoClient = client;
+					const audioDb = client.db('audio');
+					this.gridFS = new GridFSBucket(audioDb);
+					this.connect = null;
+					resolve();
 				});
+			});
+			process.on('SIGTERM', async () => {
+				await this.mongoClient.close();
 			});
 		}
 	}

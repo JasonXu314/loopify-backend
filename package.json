@@ -7,20 +7,21 @@
 	"license": "UNLICENSED",
 	"scripts": {
 		"postinstall": "node postinstall.js",
-		"prebuild": "rimraf api",
+		"prebuild": "rimraf dist",
 		"build": "nest build",
 		"format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
 		"dev": "nest start --watch",
 		"start": "nest start",
 		"start:debug": "nest start --debug --watch",
-		"start:prod": "node api/main",
+		"start:prod": "node dist/main",
 		"lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
 		"test": "jest",
 		"test:watch": "jest --watch",
 		"test:cov": "jest --coverage",
 		"test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
-		"up": "yarn upgrade-interactive --latest"
+		"up": "yarn upgrade-interactive --latest",
+		"deploy": "yarn build && xcopy /E /I /Y .\\dist ..\\music-player-backend-deploy\\dist && xcopy /Y postinstall.js ..\\music-player-backend-deploy && cd ../music-player-backend-deploy && git add . && git commit -m \"deploying\" && git push"
 	},
 	"dependencies": {
 		"@nestjs/common": "^7.6.18",

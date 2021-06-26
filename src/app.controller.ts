@@ -17,7 +17,10 @@ export class AppController {
 				return await this.videoHandler.getQueueItem(id);
 			}
 
-			return await this.videoHandler.saveVideo(id);
+			if (this.videoHandler.connect) {
+				await this.videoHandler.connect;
+			}
+			return this.videoHandler.saveVideo(id);
 		} catch (err) {
 			this.logger.log(`Encountered error on video of id ${id}`);
 			this.logger.error(err);
@@ -29,6 +32,10 @@ export class AppController {
 	async getAudio(@Param('id') id: string, @Response() res: ServerResponse): Promise<void> {
 		this.logger.log(`Received request for video with id ${id}`);
 		if (this.videoHandler.inQueue(id)) {
+			if (this.videoHandler.connect) {
+				await this.videoHandler.connect;
+			}
+
 			const video = await this.videoHandler.getQueueItem(id);
 
 			if (!video) {
@@ -38,6 +45,10 @@ export class AppController {
 			res.setHeader('Content-Disposition', contentDisposition(video.title));
 			this.videoHandler.getAudio(id).pipe(res);
 		} else {
+			if (this.videoHandler.connect) {
+				await this.videoHandler.connect;
+			}
+
 			const video = await this.videoHandler.getMetadata(id);
 
 			if (!video) {

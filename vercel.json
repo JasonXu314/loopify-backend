@@ -1,7 +1,0 @@
-{
-	"functions": {
-		"api/**": {
-			"includeFiles": "api/main.js"
-		}
-	}
-}
