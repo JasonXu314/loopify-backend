@@ -18,7 +18,7 @@ export class VideoHandlerService {
 		} else {
 			this.logger.log(process.env.MONGODB_URL);
 			this.connect = new Promise((resolve) => {
-				MongoClient.connect(process.env.MONGODB_URL, { useUnifiedTopology: true, connectTimeoutMS: 10000 }).then((client) => {
+				MongoClient.connect(process.env.MONGODB_URL, { useUnifiedTopology: true, useNewUrlParser: true }).then((client) => {
 					this.mongoClient = client;
 					const audioDb = client.db('audio');
 					this.gridFS = new GridFSBucket(audioDb);
