@@ -5,12 +5,13 @@ import { rawNumberToTime } from './utils/utils';
 
 @Injectable()
 export class VideoHandlerService {
+	private readonly logger: Logger;
 	private mongoClient: MongoClient;
 	private gridFS: GridFSBucket;
 	private queue: Record<string, Promise<Video>> = {};
 	public connect: Promise<void> | null;
 
-	constructor(private readonly logger: Logger) {
+	constructor() {
 		this.logger = new Logger('Video Handler');
 		if (typeof process.env.MONGODB_URL === 'undefined') {
 			this.logger.log('MongoDB URL undefined');
@@ -103,7 +104,7 @@ export class VideoHandlerService {
 		}
 	}
 
-	public async getMetadata(id: string): Promise<Video> {
+	public async getMetadata(id: string): Promise<Video | null> {
 		return this.mongoClient.db('audio').collection<Video>('metadata').findOne({ _id: id });
 	}
 

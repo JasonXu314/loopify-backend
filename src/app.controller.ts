@@ -5,7 +5,11 @@ import { VideoHandlerService } from './videoHandler.service';
 
 @Controller()
 export class AppController {
-	constructor(private readonly videoHandler: VideoHandlerService, private readonly logger: Logger) {}
+	private readonly logger: Logger;
+
+	constructor(private readonly videoHandler: VideoHandlerService) {
+		this.logger = new Logger('Main');
+	}
 
 	@Post('/wakeup')
 	wakeup(): void {}
@@ -32,6 +36,7 @@ export class AppController {
 	async getAudio(@Param('id') id: string, @Response() res: ServerResponse): Promise<void> {
 		this.logger.log(`Received request for video with id ${id}`);
 		if (this.videoHandler.inQueue(id)) {
+			this.logger.log('Found video in queue');
 			if (this.videoHandler.connect) {
 				await this.videoHandler.connect;
 			}
@@ -39,12 +44,14 @@ export class AppController {
 			const video = await this.videoHandler.getQueueItem(id);
 
 			if (!video) {
+				this.logger.log('Audio somehow lost');
 				throw new NotFoundException(`No audio exists with id ${id}`);
 			}
 
-			res.setHeader('Content-Disposition', contentDisposition(video.title));
+			res.setHeader('Content-Disposition', contentDisposition(`${video.title}.mp3`));
 			this.videoHandler.getAudio(id).pipe(res);
 		} else {
+			this.logger.log('Video not in queue');
 			if (this.videoHandler.connect) {
 				await this.videoHandler.connect;
 			}
@@ -52,10 +59,11 @@ export class AppController {
 			const video = await this.videoHandler.getMetadata(id);
 
 			if (!video) {
+				this.logger.log('No video found');
 				throw new NotFoundException(`No audio exists with id ${id}`);
 			}
 
-			res.setHeader('Content-Disposition', contentDisposition(video.title));
+			res.setHeader('Content-Disposition', contentDisposition(`${video.title}.mp3`));
 			this.videoHandler.getAudio(id).pipe(res);
 		}
 	}
