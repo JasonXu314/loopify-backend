@@ -20,8 +20,7 @@
 		"test:cov": "jest --coverage",
 		"test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
 		"test:e2e": "jest --config ./test/jest-e2e.json",
-		"up": "yarn upgrade-interactive --latest",
-		"deploy": "yarn build && xcopy /E /I /Y .\\dist ..\\music-player-backend-deploy\\dist && xcopy /Y postinstall.js ..\\music-player-backend-deploy && cd ../music-player-backend-deploy && git add . && git commit -m \"deploying\" && git push"
+		"up": "yarn upgrade-interactive --latest"
 	},
 	"dependencies": {
 		"@nestjs/common": "^7.6.18",
@@ -34,7 +33,7 @@
 		"reflect-metadata": "^0.1.13",
 		"rimraf": "^3.0.2",
 		"rxjs": "^7.1.0",
-		"ytdl-core": "^4.8.2"
+		"ytdl-core": "^4.8.3"
 	},
 	"devDependencies": {
 		"@nestjs/cli": "^7.6.0",
@@ -44,7 +43,7 @@
 		"@types/express-serve-static-core": "^4.17.21",
 		"@types/jest": "^26.0.22",
 		"@types/mongodb": "^3.6.18",
-		"@types/node": "^15.12.4",
+		"@types/node": "^15.12.5",
 		"@types/supertest": "^2.0.10",
 		"@typescript-eslint/eslint-plugin": "^4.28.0",
 		"@typescript-eslint/parser": "^4.28.0",
@@ -52,7 +51,7 @@
 		"eslint-config-prettier": "^8.1.0",
 		"eslint-plugin-prettier": "^3.3.1",
 		"jest": "^27.0.5",
-		"prettier": "^2.3.1",
+		"prettier": "^2.3.2",
 		"supertest": "^6.1.3",
 		"ts-jest": "^27.0.3",
 		"ts-loader": "^9.2.3",
