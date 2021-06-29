@@ -1,6 +1,5 @@
 # compiled output
 /dist
-/api
 /node_modules
 
 # .env
