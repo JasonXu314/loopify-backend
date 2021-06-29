@@ -1,7 +1,5 @@
 FROM node:16
 
-RUN npm i -g yarn
-
 WORKDIR /app
 
 COPY package*.json ./
