@@ -79,7 +79,7 @@ export class VideoHandlerService {
 						description: shortDescription,
 						author,
 						thumb: `https://i.ytimg.com/vi/${id}/1.jpg`,
-						audio: `${process.env.LOCATION || process.env.QOVERY_ROUTER_MAIN_URL!}/audio/${id}`
+						audio: `${process.env.LOCATION}/audio/${id}`
 					};
 
 					await this.mongoClient.db('audio').collection('metadata').insertOne(video);
