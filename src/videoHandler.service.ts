@@ -19,7 +19,7 @@ export class VideoHandlerService {
 		} else {
 			this.logger.log(process.env.MONGODB_URL);
 			this.connect = new Promise((resolve) => {
-				MongoClient.connect(process.env.MONGODB_URL, { useUnifiedTopology: true, useNewUrlParser: true }).then((client) => {
+				MongoClient.connect(process.env.MONGODB_URL).then((client) => {
 					this.mongoClient = client;
 					const audioDb = client.db('audio');
 					this.gridFS = new GridFSBucket(audioDb);
@@ -54,7 +54,7 @@ export class VideoHandlerService {
 					this.logger.log(`Saving video with id ${id}`);
 					const url = `https://www.youtube.com/watch?v=${id}`;
 
-					const dlStream = ytdl(url);
+					const dlStream = ytdl(url, { filter: 'audio' });
 					const {
 						player_response: {
 							videoDetails: { title, lengthSeconds, shortDescription, author }
@@ -62,8 +62,8 @@ export class VideoHandlerService {
 					} = await ytdl.getBasicInfo(url);
 					const duration = rawNumberToTime(parseInt(lengthSeconds));
 
-					const writeStream = this.gridFS.openUploadStreamWithId(id, title);
-					dlStream.pipe(writeStream);
+					const writeStream = this.gridFS.openUploadStreamWithId(id as unknown as ObjectId, title);
+					dlStream.pipe(writeStream as unknown as NodeJS.WritableStream);
 					await new Promise((resolve) => {
 						dlStream.on('finish', resolve);
 						dlStream.on('close', resolve);
@@ -82,6 +82,7 @@ export class VideoHandlerService {
 						audio: `${process.env.LOCATION}/audio/${id}`
 					};
 
+					// @ts-ignore
 					await this.mongoClient.db('audio').collection('metadata').insertOne(video);
 
 					delete this.queue[id];
